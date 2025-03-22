@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Website Analyzer Demo</title>
+  <script>
+    async function analyzeWebsite(event) {
+      event.preventDefault();
+
+      const url = document.getElementById('urlInput').value;
+      const resultsDiv = document.getElementById('results');
+
+      resultsDiv.innerHTML = 'Analyzing...';
+
+      try {
+        const response = await fetch('http://localhost:3000/analyses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        resultsDiv.innerHTML = `
+          <h3>Analysis Results:</h3>
+          <ul>
+            <li><strong>H1:</strong> ${data.h1}</li>
+            <li><strong>H2:</strong> ${data.h2Text}</li>
+            <li><strong>Paragraph:</strong> ${data.pText}</li>
+            <li><strong>CTA:</strong> ${data.ctaText}</li>
+            <li><strong>Background Color:</strong> ${data.bgColor}</li>
+          </ul>
+        `;
+      } catch (error) {
+        resultsDiv.innerHTML = `Error: ${error.message}`;
+      }
+    }
+  </script>
+</head>
+<body>
+  <h2>Website Analyzer</h2>
+
+  <form onsubmit="analyzeWebsite(event)">
+    <input type="text" id="urlInput" placeholder="Enter website URL" required style="width:300px; padding:5px;">
+    <button type="submit">Analyze</button>
+  </form>
+  <div id="results" style="margin-top:20px;"></div>
+
+
+  <h2>Website Analyzer Admin Panel</h2>
+
+  <h3>Categories</h3>
+  <input id="categoryName" placeholder="New Category">
+  <button onclick="addCategory()">Add Category</button>
+  <ul id="categories"></ul>
+
+  <h3>Edit Category Schedule</h3>
+  Category ID: <input id="editCategoryId"><br>
+  New Schedule: <input id="newSchedule"><br>
+  <button onclick="updateSchedule()">Update Schedule</button>
+
+
+  <h3>Websites</h3>
+  URL: <input id="websiteUrl"><br>
+  Category ID: <input id="websiteCategoryId"><br>
+  <button onclick="addWebsite()">Add Website</button>
+  <ul id="websites"></ul>
+
+  <h3>Analyses</h3>
+  <ul id="analyses"></ul>
+
+<script>
+async function addCategory() {
+  const name = document.getElementById('categoryName').value;
+  await fetch('http://localhost:3000/categories', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name})
+  });
+  loadCategories();
+}
+
+async function loadCategories() {
+  const res = await fetch('http://localhost:3000/categories');
+  const data = await res.json();
+  document.getElementById('categories').innerHTML = data.map(cat =>
+        `<li>${cat.id}: ${cat.name} (${cat.schedule}) <button onclick="removeCategory(${cat.id})">X</button></li>`
+      ).join('');
+}
+
+async function removeCategory(id) {
+  await fetch(`http://localhost:3000/categories/${id}`, { method: 'DELETE' });
+  loadCategories();
+  loadWebsites();
+}
+
+async function addWebsite() {
+  const url = document.getElementById('websiteUrl').value;
+  const categoryId = parseInt(document.getElementById('websiteCategoryId').value);
+
+  await fetch('http://localhost:3000/websites', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url, categoryId})
+  });
+  loadWebsites();
+}
+
+async function loadWebsites() {
+  const res = await fetch('http://localhost:3000/websites');
+  const data = await res.json();
+  document.getElementById('websites').innerHTML = data.map(ws =>
+    `<li>${ws.id}: ${ws.url} (${ws.category ? ws.category.name : 'No category'}) <button onclick="removeWebsite(${ws.id})">X</button></li>`
+  ).join('');
+}
+
+
+async function removeWebsite(id) {
+  await fetch(`http://localhost:3000/websites/${id}`, { method: 'DELETE' });
+  loadWebsites();
+}
+
+async function loadAnalyses() {
+  const res = await fetch(`http://localhost:3000/analyses`);
+  const data = await res.json();
+  document.getElementById('analyses').innerHTML = data.map(a => `<li>${a.website.url} ${a.analyzedAt}:<br/> h1:${a.h1}<br/> h2:${a.h2}<br/>p:${a.paragraph}<br/>bgColor:${a.bgColor}</li>`).join('');
+}
+
+async function updateSchedule() {
+  const id = document.getElementById('editCategoryId').value;
+  const schedule = document.getElementById('newSchedule').value;
+
+  await fetch(`http://localhost:3000/categories/${id}/schedule`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ schedule })
+  });
+
+  // Update cron jobs
+  await fetch('http://localhost:3000/cronjobs/update', { method: 'POST' });
+
+  loadCategories();
+  alert('Cron schedule updated successfully!');
+
+}
+
+loadCategories();
+loadWebsites();
+loadAnalyses();
+</script>
+
+</body>
+</html>
