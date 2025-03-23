@@ -13,7 +13,7 @@
       resultsDiv.innerHTML = 'Analyzing...';
 
       try {
-        const response = await fetch('http://localhost:3000/analyses', {
+        const response = await fetch('https://method-scrapper.onrender.com/analyses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url })
@@ -72,14 +72,14 @@
 <script>
 async function addCategory() {
   const name = document.getElementById('categoryName').value;
-  await fetch('http://localhost:3000/categories', {
+  await fetch('https://method-scrapper.onrender.com/categories', {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name})
   });
   loadCategories();
 }
 
 async function loadCategories() {
-  const res = await fetch('http://localhost:3000/categories');
+  const res = await fetch('https://method-scrapper.onrender.com/categories');
   const data = await res.json();
   document.getElementById('categories').innerHTML = data.map(cat =>
         `<li>${cat.id}: ${cat.name} (${cat.schedule}) <button onclick="removeCategory(${cat.id})">X</button></li>`
@@ -87,7 +87,7 @@ async function loadCategories() {
 }
 
 async function removeCategory(id) {
-  await fetch(`http://localhost:3000/categories/${id}`, { method: 'DELETE' });
+  await fetch(`https://method-scrapper.onrender.com/categories/${id}`, { method: 'DELETE' });
   loadCategories();
   loadWebsites();
 }
@@ -96,14 +96,14 @@ async function addWebsite() {
   const url = document.getElementById('websiteUrl').value;
   const categoryId = parseInt(document.getElementById('websiteCategoryId').value);
 
-  await fetch('http://localhost:3000/websites', {
+  await fetch('https://method-scrapper.onrender.com/websites', {
     method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url, categoryId})
   });
   loadWebsites();
 }
 
 async function loadWebsites() {
-  const res = await fetch('http://localhost:3000/websites');
+  const res = await fetch('https://method-scrapper.onrender.com/websites');
   const data = await res.json();
   document.getElementById('websites').innerHTML = data.map(ws =>
     `<li>${ws.id}: ${ws.url} (${ws.category ? ws.category.name : 'No category'}) <button onclick="removeWebsite(${ws.id})">X</button></li>`
@@ -112,12 +112,12 @@ async function loadWebsites() {
 
 
 async function removeWebsite(id) {
-  await fetch(`http://localhost:3000/websites/${id}`, { method: 'DELETE' });
+  await fetch(`https://method-scrapper.onrender.com/websites/${id}`, { method: 'DELETE' });
   loadWebsites();
 }
 
 async function loadAnalyses() {
-  const res = await fetch(`http://localhost:3000/analyses`);
+  const res = await fetch(`https://method-scrapper.onrender.com/analyses`);
   const data = await res.json();
   document.getElementById('analyses').innerHTML = data.map(a => `<li>${a.website.url} ${a.analyzedAt}:<br/> h1:${a.h1}<br/> h2:${a.h2}<br/>p:${a.paragraph}<br/>bgColor:${a.bgColor}</li>`).join('');
 }
@@ -126,14 +126,14 @@ async function updateSchedule() {
   const id = document.getElementById('editCategoryId').value;
   const schedule = document.getElementById('newSchedule').value;
 
-  await fetch(`http://localhost:3000/categories/${id}/schedule`, {
+  await fetch(`https://method-scrapper.onrender.com/categories/${id}/schedule`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ schedule })
   });
 
   // Update cron jobs
-  await fetch('http://localhost:3000/cronjobs/update', { method: 'POST' });
+  await fetch('https://method-scrapper.onrender.com/cronjobs/update', { method: 'POST' });
 
   loadCategories();
   alert('Cron schedule updated successfully!');
